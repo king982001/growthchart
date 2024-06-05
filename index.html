@@ -5,16 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weight-for-Age Percentiles</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        #chartContainer {
+            width: 90%;
+            max-width: 800px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="growthChart" width="800" height="400"></canvas>
+    <h1>Weight-for-Age Percentiles for Boys</h1>
+    <form id="weightForm">
+        <label for="age">Age (months):</label>
+        <input type="number" id="age" name="age" min="0" max="60" required>
+        <label for="weight">Weight (kg):</label>
+        <input type="number" id="weight" name="weight" step="0.1" required>
+        <button type="submit">Plot Weight</button>
+    </form>
+    <div id="chartContainer">
+        <canvas id="growthChart"></canvas>
+    </div>
     <script>
-        // Load the JSON data
+        let growthChart;
+        let childWeights = [];
+
+        // Fetch the JSON data
         fetch('percentile_data.json')
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('growthChart').getContext('2d');
-                const growthChart = new Chart(ctx, {
+                growthChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: data.months,
@@ -45,6 +82,7 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         title: {
                             display: true,
                             text: 'Weight-for-Age Percentiles for Boys'
@@ -75,21 +113,34 @@
                         }
                     }
                 });
-
-                // Add child's weight at 24 months
-                const childWeight = {
-                    label: 'Child Weight (24 months)',
-                    data: [{x: 24, y: 12}],
-                    borderColor: 'rgba(255, 0, 0, 1)',
-                    backgroundColor: 'rgba(255, 0, 0, 0.5)',
-                    pointRadius: 6,
-                    type: 'scatter'
-                };
-
-                // Add the child's weight dataset to the growth chart
-                growthChart.data.datasets.push(childWeight);
-                growthChart.update();
             });
+
+        // Handle form submission
+        document.getElementById('weightForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const age = parseInt(document.getElementById('age').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            childWeights.push({ x: age, y: weight });
+
+            const childWeightDataset = {
+                label: 'Child Weight',
+                data: childWeights,
+                borderColor: 'rgba(255, 0, 0, 1)',
+                backgroundColor: 'rgba(255, 0, 0, 0.5)',
+                pointRadius: 6,
+                type: 'scatter'
+            };
+
+            // Remove previous child weight dataset if exists
+            const existingDatasetIndex = growthChart.data.datasets.findIndex(dataset => dataset.label === 'Child Weight');
+            if (existingDatasetIndex !== -1) {
+                growthChart.data.datasets.splice(existingDatasetIndex, 1);
+            }
+
+            // Add new child weight dataset
+            growthChart.data.datasets.push(childWeightDataset);
+            growthChart.update();
+        });
     </script>
 </body>
 </html>
