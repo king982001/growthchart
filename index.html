@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weight-for-Age Percentiles</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -28,6 +29,12 @@
             width: 100% !important;
             height: auto !important;
         }
+
+        .warning {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -39,9 +46,11 @@
         <input type="number" id="weight" name="weight" step="0.1" required>
         <button type="submit">Plot Weight</button>
     </form>
+    <button id="downloadPdf">Download PDF</button>
     <div id="chartContainer">
         <canvas id="growthChart"></canvas>
     </div>
+    <div id="warningMessage" class="warning"></div>
     <script>
         let growthChart;
         let childWeights = [];
@@ -140,6 +149,26 @@
             // Add new child weight dataset
             growthChart.data.datasets.push(childWeightDataset);
             growthChart.update();
+
+            // Display warning for malnutrition
+            const warningMessage = document.getElementById('warningMessage');
+            if (weight < growthChart.data.datasets[0].data[age]) {
+                warningMessage.textContent = 'Warning: The weight is below the 1st percentile. This may indicate malnutrition.';
+            } else {
+                warningMessage.textContent = '';
+            }
+        });
+
+        // Download chart as PDF
+        document.getElementById('downloadPdf').addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            pdf.text("Weight-for-Age Percentiles for Boys", 10, 10);
+            const chartCanvas = document.getElementById('growthChart');
+            pdf.addImage(chartCanvas.toDataURL('image/png'), 'PNG', 10, 20, 180, 100);
+
+            pdf.save('growth_chart.pdf');
         });
     </script>
 </body>
